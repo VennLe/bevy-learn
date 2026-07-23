@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::game_state::GameState;
+use crate::{game_state::GameState, ui::main_menu};
 use super::hud;
 
 pub struct UiPlugin;

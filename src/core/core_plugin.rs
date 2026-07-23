@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{ prelude::*};
 use crate::game_state::GameState;
 
 pub struct CorePlugin;
