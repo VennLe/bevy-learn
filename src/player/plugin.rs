@@ -9,6 +9,9 @@ impl Plugin for PlayerPlugin {
         app.add_systems(OnEnter(GameState::Playing), systems::spawn_player)
            .add_systems(Update, (
                systems::player_move,
+               systems::player_look,
+               systems::sync_player_yaw,
+               systems::toggle_mouse_lock,
                systems::take_damage,
            ).run_if(in_state(GameState::Playing)));
     }

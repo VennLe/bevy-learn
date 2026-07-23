@@ -26,12 +26,16 @@ fn main() {
         .init_state::<game_state::GameState>()
         .insert_resource(AssetsLoading(Vec::new()))
         .add_plugins((
-            InitGamePlugin,
             core::CorePlugin,
+            InitGamePlugin,
             player::PlayerPlugin,
             enemy::EnemyPlugin,
             audio::AudioPlugin,
             camera::CameraPlugin,
         ))
+        // 启动时直接进入 Playing（简化，跳过 Loading）
+        .add_systems(Startup, |mut next: ResMut<NextState<game_state::GameState>>| {
+            next.set(game_state::GameState::Playing);
+        })
         .run();
 }
