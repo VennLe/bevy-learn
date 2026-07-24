@@ -1,6 +1,7 @@
-use bevy::prelude::*;
+use bevy::{prelude::*};
+use bevy_rapier3d::plugin::{NoUserData, RapierPhysicsPlugin};
 
-use crate::game_state::{AssetsLoading, InitGamePlugin};
+use crate::{game_state::InitGamePlugin, ui::MenuPlugin};
 
 mod game_state;
 mod core;
@@ -24,18 +25,19 @@ fn main() {
             ..default()
         }))
         .init_state::<game_state::GameState>()
-        .insert_resource(AssetsLoading(Vec::new()))
+        .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())  // 添加物理引擎
         .add_plugins((
-            core::CorePlugin,
             InitGamePlugin,
+            MenuPlugin,
+            core::CorePlugin,
             player::PlayerPlugin,
             enemy::EnemyPlugin,
             audio::AudioPlugin,
-            camera::CameraPlugin,
+            // camera::CameraPlugin,
         ))
         // 启动时直接进入 Playing（简化，跳过 Loading）
         .add_systems(Startup, |mut next: ResMut<NextState<game_state::GameState>>| {
-            next.set(game_state::GameState::Playing);
+            next.set(game_state::GameState::Menu);
         })
         .run();
 }

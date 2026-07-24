@@ -1,7 +1,8 @@
-use bevy::{asset::LoadState, prelude::*, ui::update};
+use std::process;
 
-use crate::ui::main_menu::{self, menu_button_system};
+use bevy::{asset::LoadState, gltf::gltf, prelude::*};
 
+// 游戏全局状态
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
 pub enum GameState {
     #[default]
@@ -12,75 +13,92 @@ pub enum GameState {
     GameOver,
 }
 
-// 用于跟踪正在加载的资产列表
+// 集中管理所有游戏资产的Handle
 #[derive(Resource)]
-pub struct AssetsLoading(pub Vec<UntypedHandle>);
+pub struct GameAssets {
+    pub font: Handle<Font>,
+    pub main_menu_bg: Handle<Image>,
+    pub c6091_scene: Handle<Gltf>,
+}
 
-// 加载进度跟踪
+// 游戏加载进度跟踪
 #[derive(Resource)]
 pub struct LoadingProgress  {
+    handles: Vec<UntypedHandle>,
     total: usize,
     loaded: usize,
 }
 
-// 检查资产是否全部加载完成
-pub fn setup_loading(
+// 统一的资产加载与检查系统
+pub fn load_and_check_assets(
     mut cmd: Commands,
     asset_server: Res<AssetServer>,
-    mut loading: ResMut<AssetsLoading>,
-) {
-    // let player_mesh: Handle<Mesh> = asset_server.load("models/character.glb#Mesh0/Primitive0");
-    // let bgm: Handle<AudioSource> = asset_server.load("audio/bgm.ogg");
-    // 加载字体
-    let font: Handle<Font> = asset_server.load("font/NotoSerifCJKsc/SimplifiedChinese/NotoSerifCJKsc-Regular.otf");
-    // 加载菜单背景图片
-    let main_menu: Handle<Image> = asset_server.load("ui/m1.png");
-
-    // loading.0.push(player_mesh.untyped());
-    // loading.0.push(bgm.untyped());
-    loading.0.push(font.untyped());
-    loading.0.push(main_menu.untyped());
-
-    cmd.insert_resource(LoadingProgress {
-        total: loading.0.len(),
-        loaded: 0,
-    });
-}
-
-pub fn check_assets_ready(
-    server: Res<AssetServer>,
-    loading: Res<AssetsLoading>,
-    mut progress: ResMut<LoadingProgress>,
+    progress: Option<ResMut<LoadingProgress>>,
     mut next_state: ResMut<NextState<GameState>>,
+    mut initialized: Local<bool>,
 ) {
-    let total = loading.0.len();
-    if total == 0 {
-        return; // 没有资产需要加载
-    }
-    
-    // 逐个检查每个资产的加载状态
-    let loaded_count = loading.0.iter()
-        .filter(|handle| {
-            matches!(server.get_load_state(*handle), Some(LoadState::Loaded))
-        })
-        .count();
-    
-    progress.total = total;
-    progress.loaded = loaded_count;
-    
-    // 检查是否有加载失败的资产
-    let has_failed = loading.0.iter().any(|handle| {
-        matches!(server.get_load_state(handle.id()), Some(LoadState::Failed(_)))
-    });
-    
-    if has_failed {
-        eprintln!("Some assets failed to load!");
-        // 可以选择重试或继续
+    // 第一帧：注册所有资产并初始化
+    if !*initialized {
+        let c6091: Handle<Gltf> = asset_server.load(GltfAssetLabel::Scene(0).from_asset("models/c6091.glb"));
+        let font: Handle<Font> = asset_server.load("font/NotoSerifCJKsc/SimplifiedChinese/NotoSerifCJKsc-Regular.otf");
+        let main_menu_bg: Handle<Image> = asset_server.load("ui/m1.png");
+
+        // 保存所有 Handle 供后续使用
+        cmd.insert_resource(GameAssets {
+            font: font.clone(),
+            main_menu_bg: main_menu_bg.clone(),
+            c6091_scene: c6091,
+        });
+
+         // 把 Handle 列表也存到进度里
+        let handles = vec![font.untyped(), main_menu_bg.untyped()];
+        let total = handles.len();
+        cmd.insert_resource(LoadingProgress {
+            handles,
+            total,
+            loaded: 0,
+        });
+
+        *initialized = true;
         return;
     }
-    
-    // 所有资产加载完成
+
+    let mut progress = match progress {
+        Some(p) => p,
+        None => return,
+    };
+
+    let total = progress.handles.len();
+    if total == 0 {
+          // 没有需要加载的资产，直接进入菜单
+        next_state.set(GameState::Menu);
+        return;
+    }
+
+    // 统计已加载数量
+    let loaded_count = progress
+        .handles
+        .iter()
+        .filter(|handle| {
+            matches!(asset_server.get_load_state(*handle), Some(LoadState::Loaded))
+        })
+        .count();
+
+    progress.total = total;
+    progress.loaded = loaded_count;
+
+    // 检查是否有加载失败的资产，有则直接终止程序
+    for handle in &progress.handles {
+        if let Some(LoadState::Failed(err)) = asset_server.get_load_state(handle.id()) {
+            eprintln!("❌ 资产加载失败！");
+            eprintln!("   原因: {}", err);
+            process::exit(1);
+        }
+    }
+
+    // 所有资产加载完成 → 切到 Menu
     if loaded_count == total {
+        info!("✅ 所有资产加载完成，进入菜单");
         next_state.set(GameState::Menu);
     }
 }
@@ -89,8 +107,6 @@ pub struct InitGamePlugin;
 
 impl Plugin for InitGamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, (setup_loading, main_menu::setup_menu))
-            .add_systems(Update, check_assets_ready.run_if(in_state(GameState::Loading)))
-            .add_systems(Update, menu_button_system.run_if(in_state(GameState::Menu)));
+        app.add_systems(OnEnter(GameState::Loading), load_and_check_assets);
     }
 }
