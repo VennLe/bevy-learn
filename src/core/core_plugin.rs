@@ -1,7 +1,12 @@
 use std::any::Any;
 
 use crate::game_state::{GameAssets, GameState};
-use bevy::{app::SceneSpawnerSystems::SceneSpawn, gltf::{GltfAssetLabel::Scene, GltfMesh, GltfSceneName}, prelude::*, scene::ScenePatch};
+use bevy::{
+    app::SceneSpawnerSystems::SceneSpawn,
+    gltf::{GltfAssetLabel::Scene, GltfMesh, GltfSceneName},
+    prelude::*,
+    scene::ScenePatch,
+};
 use bevy_rapier3d::prelude::*;
 
 pub struct CorePlugin;
@@ -23,53 +28,77 @@ fn setup_world(
     mut materials: ResMut<Assets<StandardMaterial>>,
     assets: Res<GameAssets>,
 ) {
+    let wall = Mesh::from(Cuboid::from_size(Vec3::ONE));
     // 地面
-    cmd.spawn((
-        Mesh3d(meshes.add(Plane3d::default().mesh().size(50.0, 50.0))),
-        MeshMaterial3d(materials.add(Color::srgb(0.35, 0.5, 0.3))),
-        Transform::from_xyz(0.0, 0.0, 0.0),
-        // 碰撞检测
-        RigidBody::Fixed,
-        Collider::cuboid(50.0, 0.5, 50.0),
-    ));
+    if let Some(terrain_material) = assets.textures.get("forest_leaves").cloned() {
+        cmd.spawn((
+            Mesh3d(meshes.add(wall.clone())),
+            MeshMaterial3d(materials.add(terrain_material.clone())),
+            Transform::from_xyz(0.0, 0.0, 0.0).with_scale(Vec3::new(100.0, 0.2, 100.0)),
+            // 碰撞检测
+            RigidBody::Fixed,
+            Collider::cuboid(50.0, 0.1, 50.0),
+        ));
+    }
 
     // ★ 从 Gltf 中提取场景
-    if let Some(c6091) = assets.c6091_scene.into() {
+    if let Some(c6091) = assets.scenes.get("c6091_model").cloned() {
         cmd.spawn((
-            // /
-            Transform::from_xyz(3.0, 0.0, -2.0),
+            WorldAssetRoot(c6091.into()),
+            Transform::from_xyz(5.0, 2.0, -10.0).with_scale(Vec3::splat(10.0)),
+            
+            RigidBody::Dynamic,
+        ));
+    }
+     if let Some(torch) = assets.scenes.get("torch").cloned() {
+        cmd.spawn((
+            WorldAssetRoot(torch.into()),
+            Transform::from_xyz(-5.0, 6.0, -5.0).with_scale(Vec3::splat(10.0)),
+            
+            RigidBody::Dynamic,
+        ));
+    }
+    if let Some(lemon) = assets.scenes.get("lemon").cloned() {
+        cmd.spawn((
+            WorldAssetRoot(lemon.into()),
+            Transform::from_xyz(-3.0, 1.0, 2.0).with_scale(Vec3::splat(10.0)),
+            
+            RigidBody::Dynamic,
         ));
     }
 
     // 几面墙壁 (用长方体拼接成一个简易的迷宫/竞技场)
-    let wall_material = materials.add(Color::srgb(0.6, 0.5, 0.4));
+    if let Some(wall_material) = assets.textures.get("mossy_bricks") {
+        // 北墙
+        cmd.spawn((
+            Mesh3d(meshes.add(wall.clone())),
+            MeshMaterial3d(materials.add(wall_material.clone())),
+            Transform::from_xyz(0.0, 2.0, 10.0).with_scale(Vec3::new(20.0, 4.0, 0.2)),
+            // 碰撞检测
+            RigidBody::Fixed,
+            Collider::cuboid(10.0, 2.0, 0.1),
+        ));
 
-    // 北墙
-    cmd.spawn((
-        Mesh3d(meshes.add(Cuboid::from_size(Vec3::new(20.0, 4.0, 0.5)))),
-        MeshMaterial3d(wall_material.clone()),
-        Transform::from_xyz(0.0, 2.0, 10.0),
-        // 碰撞检测
-        RigidBody::Fixed,
-        Collider::cuboid(20.0, 4.0, 0.5),
-    ));
+        // 西墙
+        cmd.spawn((
+            Mesh3d(meshes.add(wall.clone())),
+            MeshMaterial3d(materials.add(wall_material.clone())),
+            Transform::from_xyz(-10.1, 2.0, 0.0).with_scale(Vec3::new(0.2, 4.0, 20.0)),
+            // 碰撞检测
+            RigidBody::Fixed,
+            Collider::cuboid(0.1, 2.0, 10.0),
+        ));
 
-    // 西墙
-    cmd.spawn((
-        Mesh3d(meshes.add(Cuboid::from_size(Vec3::new(0.5, 4.0, 20.0)))),
-        MeshMaterial3d(wall_material.clone()),
-        Transform::from_xyz(-10.0, 2.0, 0.0),
-        // 碰撞检测
-        RigidBody::Fixed,
-        Collider::cuboid(0.5, 4.0, 20.0),
-    ));
-
-    // 东墙
-    cmd.spawn((
-        Mesh3d(meshes.add(Cuboid::from_size(Vec3::new(0.5, 4.0, 20.0)))),
-        MeshMaterial3d(wall_material),
-        Transform::from_xyz(0.5, 4.0, 20.0),
-    ));
+        // 东墙
+        cmd.spawn((
+            Mesh3d(meshes.add(wall.clone())),
+            MeshMaterial3d(materials.add(wall_material.clone())),
+            Transform::from_xyz(10.1, 2.0, 0.0).with_scale(Vec3::new(0.2, 4.0, 20.0)),
+            // 碰撞检测
+            RigidBody::Fixed,
+            Collider::cuboid(0.1, 2.0, 10.0),
+        ));
+    } 
 
     // 几个障碍物（箱子）
     let box_material = materials.add(Color::srgb(0.8, 0.5, 0.2)); // 木箱色
@@ -84,12 +113,12 @@ fn setup_world(
 
     for pos in box_positions {
         cmd.spawn((
-            Mesh3d(meshes.add(Cuboid::from_size(Vec3::new(1.0, 1.0, 1.0)))),
+            Mesh3d(meshes.add(wall.clone())),
             MeshMaterial3d(box_material.clone()),
             Transform::from_translation(pos),
             // 碰撞检测
             RigidBody::Fixed,
-            Collider::cuboid(1.0, 1.0, 1.0),
+            Collider::cuboid(0.5, 0.5, 0.5),
         ));
     }
 

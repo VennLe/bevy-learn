@@ -29,7 +29,7 @@ pub fn spawn_player(
         Velocity::default(),
 
         // 渲染实体
-        Mesh3d(meshes.add(Cuboid::from_size(Vec3::new(0.6, 1.8, 0.6)))),
+        Mesh3d(meshes.add(Cylinder::new(0.6, 1.8))),
         MeshMaterial3d(materials.add(Color::srgb(0.2, 0.6, 0.9))),
     )).id();
     

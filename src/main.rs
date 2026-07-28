@@ -1,5 +1,5 @@
 use bevy::{prelude::*};
-use bevy_rapier3d::plugin::{NoUserData, RapierPhysicsPlugin};
+use bevy_rapier3d::{plugin::{NoUserData, RapierPhysicsPlugin}, render::RapierDebugRenderPlugin};
 
 use crate::{game_state::InitGamePlugin, ui::MenuPlugin};
 
@@ -26,6 +26,7 @@ fn main() {
         }))
         .init_state::<game_state::GameState>()
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())  // 添加物理引擎
+        // .add_plugins(RapierDebugRenderPlugin::default())
         .add_plugins((
             InitGamePlugin,
             MenuPlugin,
