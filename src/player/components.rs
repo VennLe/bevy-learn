@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 /// 第一人称玩家组件
 #[derive(Component, Debug)]
-#[require(Transform)]
+#[require(Transform, crate::core::DespawnOnGameOver,)]
 pub struct Player {
     pub speed: f32,
     pub sensitivity: f32,

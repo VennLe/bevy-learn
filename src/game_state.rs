@@ -19,7 +19,7 @@ pub struct GameAssets {
     pub font: Handle<Font>,
     pub main_menu_bg: Handle<Image>,
     pub scenes: HashMap<&'static str, Handle<WorldAsset>>,
-    pub textures: HashMap<&'static str, StandardMaterial>,
+    // pub textures: HashMap<&'static str, StandardMaterial>,
 }
 
 // 游戏加载进度跟踪
@@ -47,6 +47,8 @@ pub fn load_and_check_assets(
         let torch: Handle<WorldAsset> = asset_server.load(GltfAssetLabel::Scene(0).from_asset("models/small_plastic_torch_2k.glb"));
         // 柠檬
         let lemon: Handle<WorldAsset> = asset_server.load(GltfAssetLabel::Scene(0).from_asset("models/food_lime_01_2k.glb"));
+        // object
+        let object: Handle<WorldAsset> = asset_server.load(GltfAssetLabel::Scene(0).from_asset("scenes/concrete_rock_path_2k.glb"));
 
         let font: Handle<Font> =
             asset_server.load("font/NotoSerifCJKsc/SimplifiedChinese/NotoSerifCJKsc-Regular.otf");
@@ -58,45 +60,46 @@ pub fn load_and_check_assets(
             asset_server.load("textures/wall/mossy_brick_nor_gl_2k.exr");
         let rough_mossy_bricks: Handle<Image> =
             asset_server.load("textures/wall/mossy_brick_rough_2k.exr");
-        let wall_material = StandardMaterial {
-            base_color_texture: Some(diff_mossy_bricks),
-            normal_map_texture: Some(nor_mossy_bricks),
-            metallic_roughness_texture: Some(rough_mossy_bricks),
-            metallic: 0.0,
-            ..default()
-        };
+        // let wall_material = StandardMaterial {
+        //     base_color_texture: Some(diff_mossy_bricks),
+        //     normal_map_texture: Some(nor_mossy_bricks),
+        //     metallic_roughness_texture: Some(rough_mossy_bricks),
+        //     metallic: 0.0,
+        //     ..default()
+        // };
 
         // terrain
-        let diff_forest_leaves: Handle<Image> =
-            asset_server.load("textures/terrain/forest_leaves_02_diffuse_2k.jpg");
-        let nor_forest_leaves: Handle<Image> =
-            asset_server.load("textures/terrain/forest_leaves_02_nor_gl_2k.exr");
-        let rough_forest_leaves: Handle<Image> =
-            asset_server.load("textures/terrain/forest_leaves_02_rough_2k.jpg");
-        let terrain_material = StandardMaterial {
-            base_color_texture: Some(diff_forest_leaves),
-            normal_map_texture: Some(nor_forest_leaves),
-            metallic_roughness_texture: Some(rough_forest_leaves),
-            metallic: 0.0,
-            ..default()
-        };
+        // let diff_forest_leaves: Handle<Image> =
+        //     asset_server.load("textures/terrain/forest_leaves_02_diffuse_2k.jpg");
+        // let nor_forest_leaves: Handle<Image> =
+        //     asset_server.load("textures/terrain/forest_leaves_02_nor_gl_2k.exr");
+        // let rough_forest_leaves: Handle<Image> =
+        //     asset_server.load("textures/terrain/forest_leaves_02_rough_2k.jpg");
+        // let terrain_material = StandardMaterial {
+        //     base_color_texture: Some(diff_forest_leaves),
+        //     normal_map_texture: Some(nor_forest_leaves),
+        //     metallic_roughness_texture: Some(rough_forest_leaves),
+        //     metallic: 0.0,
+        //     ..default()
+        // };
 
         // 模型资产信息
         let mut scenes_map = HashMap::new();
         scenes_map.insert("c6091_model", c6091);
         scenes_map.insert("torch", torch);
         scenes_map.insert("lemon", lemon);
-        // 纹理资产信息
-        let mut textures_map = HashMap::new();
-        textures_map.insert("mossy_bricks", wall_material);
-        textures_map.insert("forest_leaves", terrain_material);
+        scenes_map.insert("object", object);
+        // // 纹理资产信息
+        // let mut textures_map = HashMap::new();
+        // textures_map.insert("mossy_bricks", wall_material);
+        // textures_map.insert("forest_leaves", terrain_material);
 
         // 保存所有 Handle 供后续使用
         cmd.insert_resource(GameAssets {
             font: font.clone(),
             main_menu_bg: main_menu_bg.clone(),
             scenes: scenes_map,
-            textures: textures_map,
+            // textures: textures_map,
         });
 
         // 把 Handle 列表也存到进度里

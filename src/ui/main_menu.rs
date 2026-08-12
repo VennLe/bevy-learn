@@ -4,7 +4,7 @@ use crate::game_state::{GameAssets, GameState};
 
 // 标记组件：标识属于菜单的实体
 #[derive(Component)]
-pub struct MainMenu;
+pub struct MenuWindow;
 
 #[derive(Component)]
 pub enum MenuButton {
@@ -26,7 +26,7 @@ pub fn setup_menu(mut cmd: Commands, assets: Res<GameAssets>) {
             justify_content: JustifyContent::Center,
             ..default()
         },
-        MainMenu,
+        MenuWindow,
     ))
     .insert(ImageNode::new(assets.main_menu_bg.clone()))
     .with_children(|parent| {
@@ -140,7 +140,7 @@ pub fn menu_button_system(
 }
 
 // 离开 Menu 时，清除所有带 MainMenu 标记的实体
-pub fn close_main_menu(mut cmd: Commands, query: Query<Entity, With<MainMenu>>) {
+pub fn close_main_menu(mut cmd: Commands, query: Query<Entity, With<MenuWindow>>) {
     for entity in query.iter() {
         cmd.entity(entity).despawn_children();
         cmd.entity(entity).despawn();
